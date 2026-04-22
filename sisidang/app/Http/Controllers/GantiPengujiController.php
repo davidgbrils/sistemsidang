@@ -13,25 +13,28 @@ class GantiPengujiController extends Controller
 {
     public function index(Request $request): View
     {
-        $query = GantiPenguji::with(['jadwal.mahasiswa', 'pengujiLama', 'pengujiBaru', 'pengaju']);
+        $query = GantiPenguji::with(['jadwal.mahasiswa', 'pengujiLama', 'pengujiBaru', 'requester']);
+
+        // Non-admin roles (except kaprodi and staff_ften) should only see their own requests
+        if (!auth()->user()->hasAnyRole(['admin', 'kaprodi', 'staff_ften'])) {
+            $query->where('requested_by', auth()->id());
+        }
 
         if ($request->has('status') && $request->status) {
             $query->where('status', $request->status);
         }
 
-        $penguji = $query->orderBy('created_at', 'desc')->paginate(15);
+        $gantis = $query->orderBy('created_at', 'desc')->paginate(15);
 
-        return view('penguji.index', compact('penguji'));
+        return view('penguji.index', compact('gantis'));
     }
 
-    public function ganti(Request $request, JadwalSidang $jadwal): View
+    public function ganti(JadwalSidang $jadwal): View
     {
         $jadwal->load(['mahasiswa', 'penguji1', 'penguji2', 'pembimbing']);
-        $dosens = Dosen::orderBy('nama')->get();
-        
-        $pengujiLama = $jadwal->penguji1_id . ',' . $jadwal->penguji2_id;
+        $dosens = Dosen::where('is_active', true)->orderBy('nama')->get();
 
-        return view('penguji.form', compact('jadwal', 'dosens', 'pengujiLama'));
+        return view('penguji.form', compact('jadwal', 'dosens'));
     }
 
     public function store(Request $request, JadwalSidang $jadwal): RedirectResponse
@@ -44,22 +47,14 @@ class GantiPengujiController extends Controller
 
         $pengujiId = $request->penguji_lama === 'penguji1' ? $jadwal->penguji1_id : $jadwal->penguji2_id;
 
-        $existing = GantiPenguji::where('jadwal_id', $jadwal->id)
-            ->where('penguji_lama_id', $pengujiId)
-            ->where('status', 'pending')
-            ->first();
-
-        if ($existing) {
-            return back()->with('error', 'Pengajuan penggantian sudah ada');
-        }
-
         GantiPenguji::create([
             'jadwal_id' => $jadwal->id,
             'penguji_lama_id' => $pengujiId,
             'penguji_baru_id' => $request->penguji_baru_id,
-            'pengaju_id' => auth()->id(),
             'alasan' => $request->alasan,
             'status' => 'pending',
+            'requested_by' => auth()->id(),
+            'requested_at' => now(),
         ]);
 
         return redirect()->route('penguji.ganti')->with('success', 'Pengajuan penggantian berhasil dikirim');
@@ -67,12 +62,12 @@ class GantiPengujiController extends Controller
 
     public function approve(GantiPenguji $ganti): RedirectResponse
     {
-        $jadwal = $jadwal = $ganti->jadwal;
+        $jadwal = $ganti->jadwal;
 
         if ($jadwal->penguji1_id == $ganti->penguji_lama_id) {
             $jadwal->update(['penguji1_id' => $ganti->penguji_baru_id]);
         } elseif ($jadwal->penguji2_id == $ganti->penguji_lama_id) {
-            $jadwal->update(['penguji2_id' => $ganti->penguji_baru_id']);
+            $jadwal->update(['penguji2_id' => $ganti->penguji_baru_id]);
         }
 
         $ganti->update([
@@ -91,9 +86,10 @@ class GantiPengujiController extends Controller
         ]);
 
         $ganti->update([
-            'status' => 'rejected',
+            'status' => 'declined',
             'approved_by' => auth()->id(),
             'alasan_penolakan' => $request->alasan_penolakan,
+            'approved_at' => now(),
         ]);
 
         return redirect()->route('penguji.ganti')->with('success', 'Penggantian penguji ditolak');

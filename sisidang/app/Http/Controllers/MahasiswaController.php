@@ -30,7 +30,7 @@ class MahasiswaController extends Controller
             $query->where('prodi', $request->prodi);
         }
 
-        if ($request->has('_status') && $request->status) {
+        if ($request->has('status') && $request->status) {
             $query->where('status', $request->status);
         }
 

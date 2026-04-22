@@ -19,13 +19,17 @@ Route::middleware(['auth', 'verified'])->group(function () {
         return view('dashboard');
     })->name('dashboard');
 
+    // Jadwal Sidang - Index and Show for everyone, Manage for admin|kaprodi|staff_ften
     Route::get('/jadwal', [JadwalSidangController::class, 'index'])->name('jadwal.index');
-    Route::get('/jadwal/create', [JadwalSidangController::class, 'create'])->name('jadwal.create');
-    Route::post('/jadwal', [JadwalSidangController::class, 'store'])->name('jadwal.store');
     Route::get('/jadwal/{jadwal}', [JadwalSidangController::class, 'show'])->name('jadwal.show');
-    Route::get('/jadwal/{jadwal}/edit', [JadwalSidangController::class, 'edit'])->name('jadwal.edit');
-    Route::put('/jadwal/{jadwal}', [JadwalSidangController::class, 'update'])->name('jadwal.update');
-    Route::delete('/jadwal/{jadwal}', [JadwalSidangController::class, 'destroy'])->name('jadwal.destroy');
+
+    Route::middleware('role:admin|kaprodi|staff_ften')->group(function () {
+        Route::get('/jadwal/create', [JadwalSidangController::class, 'create'])->name('jadwal.create');
+        Route::post('/jadwal', [JadwalSidangController::class, 'store'])->name('jadwal.store');
+        Route::get('/jadwal/{jadwal}/edit', [JadwalSidangController::class, 'edit'])->name('jadwal.edit');
+        Route::put('/jadwal/{jadwal}', [JadwalSidangController::class, 'update'])->name('jadwal.update');
+        Route::delete('/jadwal/{jadwal}', [JadwalSidangController::class, 'destroy'])->name('jadwal.destroy');
+    });
 
     Route::middleware('role:admin|kaprodi|staff_ften')->group(function () {
         Route::get('/mahasiswa', [MahasiswaController::class, 'index'])->name('mahasiswa.index');
@@ -36,6 +40,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::put('/mahasiswa/{mahasiswa}', [MahasiswaController::class, 'update'])->name('mahasiswa.update');
         Route::delete('/mahasiswa/{mahasiswa}', [MahasiswaController::class, 'destroy'])->name('mahasiswa.destroy');
         Route::get('/mahasiswa/export', [MahasiswaController::class, 'export'])->name('mahasiswa.export');
+
+        Route::resource('dosen', \App\Http\Controllers\Admin\DosenController::class);
 
         Route::get('/import', [ImportController::class, 'excel'])->name('import.excel');
         Route::post('/import', [ImportController::class, 'importExcel'])->name('import.store');
@@ -56,21 +62,33 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/formulir/{jadwal}/{tipe}/download', [FormulirController::class, 'download'])->name('formulir.download');
     Route::get('/formulir/{jadwal}/rekap', [FormulirController::class, 'rekap'])->name('formulir.rekap');
 
+    // Ganti Penguji - Request for all, Approval for admin|kaprodi
     Route::get('/ganti-penguji', [GantiPengujiController::class, 'index'])->name('penguji.ganti');
     Route::get('/ganti-penguji/{jadwal}', [GantiPengujiController::class, 'ganti'])->name('penguji.form');
     Route::post('/ganti-penguji/{jadwal}', [GantiPengujiController::class, 'store'])->name('penguji.store');
-    Route::post('/ganti-penguji/{ganti}/approve', [GantiPengujiController::class, 'approve'])->name('penguji.approve');
-    Route::post('/ganti-penguji/{ganti}/reject', [GantiPengujiController::class, 'reject'])->name('penguji.reject');
     Route::get('/ganti-penguji/history', [GantiPengujiController::class, 'history'])->name('penguji.history');
+
+    Route::middleware('role:admin|kaprodi')->group(function () {
+        Route::post('/ganti-penguji/{ganti}/approve', [GantiPengujiController::class, 'approve'])->name('penguji.approve');
+        Route::post('/ganti-penguji/{ganti}/reject', [GantiPengujiController::class, 'reject'])->name('penguji.reject');
+    });
 
     Route::middleware('role:admin|kaprodi|staff_ften')->group(function () {
         Route::get('/honor', [HonorController::class, 'rekap'])->name('honor.rekap');
         Route::get('/honor/export', [HonorController::class, 'export'])->name('honor.export');
     });
 
+    Route::middleware('role:admin')->group(function () {
+        Route::get('/users', [\App\Http\Controllers\Admin\UserController::class, 'index'])->name('users.index');
+        Route::patch('/users/{user}/role', [\App\Http\Controllers\Admin\UserController::class, 'updateRole'])->name('users.update-role');
+    });
+
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
+
+    Route::get('/notifications', fn() => view('dashboard'))->name('notifications');
+    Route::get('/settings', fn() => view('dashboard'))->name('settings');
 });
 
 require __DIR__.'/auth.php';

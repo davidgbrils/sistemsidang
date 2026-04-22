@@ -7,23 +7,23 @@
 
         <!-- Email Address -->
         <div>
-            <label for="email" class="block text-sm font-medium text-gray-300">Alamat Email</label>
-            <input id="email" class="block mt-2 w-full bg-[#131623] border border-gray-700 rounded-xl px-4 py-3 text-white placeholder-gray-500 focus:border-[#2188FF] focus:ring-[#2188FF] transition-colors" type="email" name="email" :value="old('email')" required autofocus autocomplete="username" placeholder="Masukkan email anda..." />
+            <x-input-label for="email" :value="__('Alamat Email')" class="dark:text-gray-300" />
+            <x-text-input id="email" class="block mt-2 w-full px-4 py-3 rounded-xl transition-colors border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:border-blue-500 dark:focus:border-[#2188FF] focus:ring-blue-500 dark:focus:ring-[#2188FF]" type="email" name="email" :value="old('email')" required autofocus autocomplete="username" placeholder="Masukkan email anda..." />
             <x-input-error :messages="$errors->get('email')" class="mt-2 text-red-400" />
         </div>
 
         <!-- Password -->
         <div>
-            <label for="password" class="block text-sm font-medium text-gray-300">Kata Sandi</label>
-            <input id="password" class="block mt-2 w-full bg-[#131623] border border-gray-700 rounded-xl px-4 py-3 text-white placeholder-gray-500 focus:border-[#2188FF] focus:ring-[#2188FF] transition-colors" type="password" name="password" required autocomplete="current-password" placeholder="••••••••" />
+            <x-input-label for="password" :value="__('Kata Sandi')" class="dark:text-gray-300" />
+            <x-text-input id="password" class="block mt-2 w-full px-4 py-3 rounded-xl transition-colors border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:border-blue-500 dark:focus:border-[#2188FF] focus:ring-blue-500 dark:focus:ring-[#2188FF]" type="password" name="password" required autocomplete="current-password" placeholder="••••••••" />
             <x-input-error :messages="$errors->get('password')" class="mt-2 text-red-400" />
         </div>
 
         <!-- Remember Me -->
         <div class="flex items-center justify-between">
             <label for="remember_me" class="inline-flex items-center">
-                <input id="remember_me" type="checkbox" class="rounded bg-[#131623] border-gray-700 text-[#2188FF] shadow-sm focus:ring-[#2188FF]" name="remember">
-                <span class="ms-2 text-sm text-gray-400">Ingat Saya</span>
+                <input id="remember_me" type="checkbox" class="rounded bg-white dark:bg-slate-900 border-slate-300 dark:border-slate-700 text-blue-600 dark:text-[#2188FF] shadow-sm focus:ring-blue-500 dark:focus:ring-[#2188FF]" name="remember">
+                <span class="ms-2 text-sm text-slate-600 dark:text-gray-400">Ingat Saya</span>
             </label>
 
             @if (Route::has('password.request'))

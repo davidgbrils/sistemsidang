@@ -16,15 +16,15 @@ class JadwalSidangController extends Controller
         $jadwals = JadwalSidang::with(['mahasiswa', 'penguji1', 'penguji2', 'pembimbing'])
             ->orderBy('tanggal', 'desc')
             ->orderBy('jam_mulai', 'desc')
-            ->get();
+            ->paginate(15);
 
         return view('jadwal.index', compact('jadwals'));
     }
 
     public function create(): View
     {
-        $mahasiswas = Mahasiswa::orderBy('nama')->get();
-        $dosens = Dosen::orderBy('nama')->get();
+        $mahasiswas = Mahasiswa::where('status', '!=', 'lulus')->where('status', '!=', 'tidak_lulus')->orderBy('nama')->get();
+        $dosens = Dosen::where('is_active', true)->orderBy('nama')->get();
 
         return view('jadwal.create', compact('mahasiswas', 'dosens'));
     }
@@ -38,12 +38,12 @@ class JadwalSidangController extends Controller
             'pembimbing_id' => 'required|exists:dosens,id',
             'tanggal' => 'required|date',
             'jam_mulai' => 'required',
-            'jam_selesai' => 'required|after:jam_mulai',
+            'jam_selesai' => 'required',
             'ruang' => 'required|string|max:50',
         ]);
 
         $validated['created_by'] = auth()->id();
-        $validated['status'] = 'terjadwal';
+        $validated['status'] = 'draft';
 
         JadwalSidang::create($validated);
 
@@ -60,7 +60,7 @@ class JadwalSidangController extends Controller
     public function edit(JadwalSidang $jadwal): View
     {
         $mahasiswas = Mahasiswa::orderBy('nama')->get();
-        $dosens = Dosen::orderBy('nama')->get();
+        $dosens = Dosen::where('is_active', true)->orderBy('nama')->get();
 
         return view('jadwal.edit', compact('jadwal', 'mahasiswas', 'dosens'));
     }
@@ -74,9 +74,9 @@ class JadwalSidangController extends Controller
             'pembimbing_id' => 'required|exists:dosens,id',
             'tanggal' => 'required|date',
             'jam_mulai' => 'required',
-            'jam_selesai' => 'required|after:jam_mulai',
+            'jam_selesai' => 'required',
             'ruang' => 'required|string|max:50',
-            'status' => 'required|in:terjadwal,selesai,batal',
+            'status' => 'required|in:draft,published,selesai,dibatalkan',
         ]);
 
         $jadwal->update($validated);
@@ -89,5 +89,11 @@ class JadwalSidangController extends Controller
         $jadwal->delete();
 
         return redirect()->route('jadwal.index')->with('success', 'Jadwal berhasil dihapus');
+    }
+
+    public function publish(JadwalSidang $jadwal): RedirectResponse
+    {
+        $jadwal->update(['status' => 'published']);
+        return redirect()->route('jadwal.index')->with('success', 'Jadwal berhasil dipublish');
     }
 }

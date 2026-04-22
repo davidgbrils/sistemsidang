@@ -43,28 +43,41 @@ class NilaiSidangController extends Controller
     public function store(Request $request, JadwalSidang $jadwal): RedirectResponse
     {
         $validated = $request->validate([
-            'nilai.*.nilai_angka' => 'required|numeric|min:0|max:100',
-            'nilai.*.nilai_huruf' => 'required|string|max:2',
-            'nilai.*.keterangan' => 'nullable|string',
+            'nilai' => 'required|array',
+            'nilai.*.komponen_presentasi' => 'required|numeric|min:0|max:100',
+            'nilai.*.komponen_penguasaan' => 'required|numeric|min:0|max:100',
+            'nilai.*.komponen_penulisan' => 'required|numeric|min:0|max:100',
+            'nilai.*.komponen_sikap' => 'required|numeric|min:0|max:100',
         ]);
 
         foreach ($validated['nilai'] as $dosenId => $data) {
+            $total = ($data['komponen_presentasi'] + $data['komponen_penguasaan'] + $data['komponen_penulisan'] + $data['komponen_sikap']) / 4;
+            
+            $grade = match (true) {
+                $total >= 85 => 'A',
+                $total >= 80 => 'AB',
+                $total >= 75 => 'B',
+                $total >= 70 => 'BC',
+                $total >= 60 => 'C',
+                $total >= 50 => 'D',
+                default => 'E',
+            };
+
             NilaiSidang::updateOrCreate(
                 [
                     'jadwal_id' => $jadwal->id,
                     'dosen_id' => $dosenId,
                 ],
                 [
-                    'nilai_angka' => $data['nilai_angka'],
-                    'nilai_huruf' => $data['nilai_huruf'],
-                    'keterangan' => $data['keterangan'] ?? null,
+                    'komponen_presentasi' => $data['komponen_presentasi'],
+                    'komponen_penguasaan' => $data['komponen_penguasaan'],
+                    'komponen_penulisan' => $data['komponen_penulisan'],
+                    'komponen_sikap' => $data['komponen_sikap'],
+                    'total_nilai' => round($total, 2),
+                    'grade' => $grade,
+                    'submitted_at' => now(),
                 ]
             );
-        }
-
-        $allSubmitted = $jadwal->nilai()->count() >= 3;
-        if ($allSubmitted) {
-            $jadwal->update(['status' => 'selesai']);
         }
 
         return redirect()->route('nilai.index')->with('success', 'Nilai berhasil disimpan');
