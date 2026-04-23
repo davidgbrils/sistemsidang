@@ -16,24 +16,32 @@ class RoleAndPermissionSeeder extends Seeder
         // Reset cached roles and permissions
         app()[\Spatie\Permission\PermissionRegistrar::class]->forgetCachedPermissions();
 
-        // create permissions
-        Permission::create(['name' => 'manage sidangs']);
-        Permission::create(['name' => 'view sidangs']);
-        Permission::create(['name' => 'submit sidangs']);
-        Permission::create(['name' => 'grade sidangs']);
+        // Create permissions idempotently
+        $permissions = [
+            'manage sidangs',
+            'view sidangs',
+            'submit sidangs',
+            'grade sidangs',
+        ];
 
-        // create roles and assign created permissions
+        foreach ($permissions as $permissionName) {
+            Permission::findOrCreate($permissionName, 'web');
+        }
 
-        // Admin can do everything
-        $role = Role::create(['name' => 'admin']);
-        $role->givePermissionTo(Permission::all());
+        // Create roles idempotently and keep permissions in sync
+        $admin = Role::findOrCreate('admin', 'web');
+        $admin->syncPermissions(Permission::all());
 
-        // Dosen (Lecturer)
-        $role = Role::create(['name' => 'dosen']);
-        $role->givePermissionTo(['view sidangs', 'grade sidangs']);
+        $kaprodi = Role::findOrCreate('kaprodi', 'web');
+        $kaprodi->syncPermissions(['manage sidangs', 'view sidangs', 'grade sidangs']);
 
-        // Mahasiswa (Student)
-        $role = Role::create(['name' => 'mahasiswa']);
-        $role->givePermissionTo(['view sidangs', 'submit sidangs']);
+        $staff = Role::findOrCreate('staff_ften', 'web');
+        $staff->syncPermissions(['manage sidangs', 'view sidangs']);
+
+        $dosen = Role::findOrCreate('dosen', 'web');
+        $dosen->syncPermissions(['view sidangs', 'grade sidangs']);
+
+        $mahasiswa = Role::findOrCreate('mahasiswa', 'web');
+        $mahasiswa->syncPermissions(['view sidangs', 'submit sidangs']);
     }
 }

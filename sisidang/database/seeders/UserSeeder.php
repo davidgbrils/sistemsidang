@@ -16,63 +16,83 @@ class UserSeeder extends Seeder
     public function run(): void
     {
         // Admin
-        $admin = User::create([
-            'name' => 'Admin SiSidang',
-            'email' => 'admin@sisidang.com',
-            'password' => Hash::make('password'),
-        ]);
-        $admin->assignRole('admin');
+        $admin = User::updateOrCreate(
+            ['email' => 'admin@sisidang.com'],
+            [
+                'name' => 'Admin SiSidang',
+                'password' => Hash::make('password'),
+                'role' => 'admin',
+            ]
+        );
+        $admin->syncRoles(['admin']);
 
         // Kaprodi
-        $kaprodiUser = User::create([
-            'name' => 'Kepala Prodi',
-            'email' => 'kaprodi@sisidang.com',
-            'password' => Hash::make('password'),
-        ]);
-        $kaprodiUser->assignRole('kaprodi');
-        Dosen::create([
-            'user_id' => $kaprodiUser->id,
-            'nip' => '198001012000011001',
-            'nama' => 'Kepala Prodi, S.T., M.T.',
-            'email' => $kaprodiUser->email,
-            'jabatan' => 'Lektor Kepala',
-            'prodi' => 'Teknik Informatika',
-        ]);
+        $kaprodiUser = User::updateOrCreate(
+            ['email' => 'kaprodi@sisidang.com'],
+            [
+                'name' => 'Kepala Prodi',
+                'password' => Hash::make('password'),
+                'role' => 'kaprodi',
+            ]
+        );
+        $kaprodiUser->syncRoles(['kaprodi']);
+        Dosen::updateOrCreate(
+            ['user_id' => $kaprodiUser->id],
+            [
+                'nip' => '198001012000011001',
+                'nama' => 'Kepala Prodi, S.T., M.T.',
+                'email' => $kaprodiUser->email,
+                'jabatan' => 'Lektor Kepala',
+                'prodi' => 'Teknik Informatika',
+                'is_active' => true,
+            ]
+        );
 
         // Dosen (3)
         for ($i = 1; $i <= 3; $i++) {
-            $user = User::create([
-                'name' => "Dosen $i",
-                'email' => "dosen$i@sisidang.com",
-                'password' => Hash::make('password'),
-            ]);
-            $user->assignRole('dosen');
-            Dosen::create([
-                'user_id' => $user->id,
-                'nip' => "19900101202001100$i",
-                'nama' => "Dosen $i, S.Kom., M.Kom.",
-                'email' => $user->email,
-                'jabatan' => 'Asisten Ahli',
-                'prodi' => 'Teknik Informatika',
-            ]);
+            $user = User::updateOrCreate(
+                ['email' => "dosen$i@sisidang.com"],
+                [
+                    'name' => "Dosen $i",
+                    'password' => Hash::make('password'),
+                    'role' => 'dosen',
+                ]
+            );
+            $user->syncRoles(['dosen']);
+            Dosen::updateOrCreate(
+                ['user_id' => $user->id],
+                [
+                    'nip' => "19900101202001100$i",
+                    'nama' => "Dosen $i, S.Kom., M.Kom.",
+                    'email' => $user->email,
+                    'jabatan' => 'Asisten Ahli',
+                    'prodi' => 'Teknik Informatika',
+                    'is_active' => true,
+                ]
+            );
         }
 
         // Mahasiswa (5)
         for ($i = 1; $i <= 5; $i++) {
-            $user = User::create([
-                'name' => "Mahasiswa $i",
-                'email' => "mhs$i@sisidang.com",
-                'password' => Hash::make('password'),
-            ]);
-            $user->assignRole('mahasiswa');
-            Mahasiswa::create([
-                'user_id' => $user->id,
-                'nim' => "202000$i",
-                'nama' => "Mahasiswa $i",
-                'prodi' => 'Teknik Informatika',
-                'angkatan' => 2020,
-                'status' => 'aktif',
-            ]);
+            $user = User::updateOrCreate(
+                ['email' => "mhs$i@sisidang.com"],
+                [
+                    'name' => "Mahasiswa $i",
+                    'password' => Hash::make('password'),
+                    'role' => 'mahasiswa',
+                ]
+            );
+            $user->syncRoles(['mahasiswa']);
+            Mahasiswa::updateOrCreate(
+                ['user_id' => $user->id],
+                [
+                    'nim' => "202000$i",
+                    'nama' => "Mahasiswa $i",
+                    'prodi' => 'Teknik Informatika',
+                    'angkatan' => 2020,
+                    'status' => 'aktif',
+                ]
+            );
         }
     }
 }

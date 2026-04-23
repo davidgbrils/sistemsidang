@@ -24,10 +24,14 @@ class JadwalSidangController extends Controller
     public function create(): View
     {
         $mahasiswas = Mahasiswa::where('status', '!=', 'lulus')->where('status', '!=', 'tidak_lulus')->orderBy('nama')->get();
-        
+
+        $user = auth()->user();
+        $dosenId = $user->dosen?->id;
+        $isDosen = $user->hasRole('dosen') && $dosenId;
+
         // For dosen users, only show themselves as pembimbing option
-        if (auth()->user()->role === 'dosen') {
-            $dosens = Dosen::where('id', auth()->user()->dosen->id)->where('is_active', true)->get();
+        if ($isDosen) {
+            $dosens = Dosen::where('id', $dosenId)->where('is_active', true)->get();
         } else {
             $dosens = Dosen::where('is_active', true)->orderBy('nama')->get();
         }
@@ -38,21 +42,23 @@ class JadwalSidangController extends Controller
     public function store(Request $request): RedirectResponse
     {
         $validated = $request->validate([
-            'mahasiswa_id' => 'required|exists:mahasiswas,id',
-            'penguji1_id' => 'required|exists:dosens,id',
-            'penguji2_id' => 'required|exists:dosens,id',
-            'pembimbing_id' => 'required|exists:dosens,id',
+            'mahasiswa_id' => 'required|exists:mahasiswa,id',
+            'penguji1_id' => 'required|exists:dosen,id',
+            'penguji2_id' => 'required|exists:dosen,id',
+            'pembimbing_id' => 'required|exists:dosen,id',
             'tanggal' => 'required|date',
             'jam_mulai' => 'required',
             'jam_selesai' => 'required',
             'ruang' => 'required|string|max:50',
         ]);
 
+        $user = auth()->user();
+        $dosenId = $user->dosen?->id;
+        $isDosen = $user->hasRole('dosen') && $dosenId;
+
         // For dosen users, ensure they can only create schedules where they are the pembimbing
-        if (auth()->user()->role === 'dosen') {
-            if ($validated['pembimbing_id'] != auth()->user()->dosen->id) {
-                return back()->with('error', 'Anda hanya dapat membuat jadwal dimana Anda sebagai pembimbing');
-            }
+        if ($isDosen && $validated['pembimbing_id'] != $dosenId) {
+            return back()->with('error', 'Anda hanya dapat membuat jadwal dimana Anda sebagai pembimbing');
         }
 
         $validated['created_by'] = auth()->id();
@@ -72,16 +78,20 @@ class JadwalSidangController extends Controller
 
     public function edit(JadwalSidang $jadwal): View
     {
+        $user = auth()->user();
+        $dosenId = $user->dosen?->id;
+        $isDosen = $user->hasRole('dosen') && $dosenId;
+
         // Check if user can edit this jadwal
-        if (auth()->user()->role === 'dosen' && $jadwal->pembimbing_id != auth()->user()->dosen->id) {
+        if ($isDosen && $jadwal->pembimbing_id != $dosenId) {
             abort(403, 'Anda tidak memiliki izin untuk mengedit jadwal ini');
         }
 
         $mahasiswas = Mahasiswa::orderBy('nama')->get();
-        
+
         // For dosen users, only show themselves as pembimbing option
-        if (auth()->user()->role === 'dosen') {
-            $dosens = Dosen::where('id', auth()->user()->dosen->id)->where('is_active', true)->get();
+        if ($isDosen) {
+            $dosens = Dosen::where('id', $dosenId)->where('is_active', true)->get();
         } else {
             $dosens = Dosen::where('is_active', true)->orderBy('nama')->get();
         }
@@ -91,16 +101,20 @@ class JadwalSidangController extends Controller
 
     public function update(Request $request, JadwalSidang $jadwal): RedirectResponse
     {
+        $user = auth()->user();
+        $dosenId = $user->dosen?->id;
+        $isDosen = $user->hasRole('dosen') && $dosenId;
+
         // Check if user can update this jadwal
-        if (auth()->user()->role === 'dosen' && $jadwal->pembimbing_id != auth()->user()->dosen->id) {
+        if ($isDosen && $jadwal->pembimbing_id != $dosenId) {
             return back()->with('error', 'Anda tidak memiliki izin untuk mengupdate jadwal ini');
         }
 
         $validated = $request->validate([
-            'mahasiswa_id' => 'required|exists:mahasiswas,id',
-            'penguji1_id' => 'required|exists:dosens,id',
-            'penguji2_id' => 'required|exists:dosens,id',
-            'pembimbing_id' => 'required|exists:dosens,id',
+            'mahasiswa_id' => 'required|exists:mahasiswa,id',
+            'penguji1_id' => 'required|exists:dosen,id',
+            'penguji2_id' => 'required|exists:dosen,id',
+            'pembimbing_id' => 'required|exists:dosen,id',
             'tanggal' => 'required|date',
             'jam_mulai' => 'required',
             'jam_selesai' => 'required',
@@ -109,10 +123,8 @@ class JadwalSidangController extends Controller
         ]);
 
         // For dosen users, ensure they can only update schedules where they are the pembimbing
-        if (auth()->user()->role === 'dosen') {
-            if ($validated['pembimbing_id'] != auth()->user()->dosen->id) {
-                return back()->with('error', 'Anda hanya dapat mengupdate jadwal dimana Anda sebagai pembimbing');
-            }
+        if ($isDosen && $validated['pembimbing_id'] != $dosenId) {
+            return back()->with('error', 'Anda hanya dapat mengupdate jadwal dimana Anda sebagai pembimbing');
         }
 
         $jadwal->update($validated);
@@ -122,8 +134,12 @@ class JadwalSidangController extends Controller
 
     public function destroy(JadwalSidang $jadwal): RedirectResponse
     {
+        $user = auth()->user();
+        $dosenId = $user->dosen?->id;
+        $isDosen = $user->hasRole('dosen') && $dosenId;
+
         // Check if user can delete this jadwal
-        if (auth()->user()->role === 'dosen' && $jadwal->pembimbing_id != auth()->user()->dosen->id) {
+        if ($isDosen && $jadwal->pembimbing_id != $dosenId) {
             return back()->with('error', 'Anda tidak memiliki izin untuk menghapus jadwal ini');
         }
 
@@ -134,8 +150,12 @@ class JadwalSidangController extends Controller
 
     public function publish(JadwalSidang $jadwal): RedirectResponse
     {
+        $user = auth()->user();
+        $dosenId = $user->dosen?->id;
+        $isDosen = $user->hasRole('dosen') && $dosenId;
+
         // Check if user can publish this jadwal
-        if (auth()->user()->role === 'dosen' && $jadwal->pembimbing_id != auth()->user()->dosen->id) {
+        if ($isDosen && $jadwal->pembimbing_id != $dosenId) {
             return back()->with('error', 'Anda tidak memiliki izin untuk mempublish jadwal ini');
         }
 
